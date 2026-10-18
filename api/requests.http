@@ -1,0 +1,25 @@
+@base = http://localhost:8000
+
+### 1. create the first admin (works only once)
+POST {{base}}/auth/bootstrap
+Content-Type: application/json
+
+{"name": "Your Name", "email": "you@example.com", "password": "at-least-8-chars"}
+
+### 2. log in
+# @name login
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"email": "you@example.com", "password": "at-least-8-chars"}
+
+### 3. create a batch
+POST {{base}}/batches
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{"name": "CSE 3rd Year A", "year": 3, "section": "A"}
+
+### 4. list batches
+GET {{base}}/batches
+Authorization: Bearer {{login.response.body.access_token}}
