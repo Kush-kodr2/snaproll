@@ -1,0 +1,12 @@
+data/
+raw data/
+venv/
+__pycache__/
+.env
+desktop.ini
+.DS_Store
+*.log
+*.db
+*.sqlite
+*.sqlite3
+*.exe
