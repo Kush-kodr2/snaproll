@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
-
+	"strconv"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -38,4 +38,24 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 func isUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
+func isForeignKeyViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23503"
+}
+
+// pathID reads {id} from the URL path.
+func pathID(r *http.Request) (int64, bool) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	return id, err == nil && id > 0
+}
+
+// optionalQueryID reads ?key=123. A missing key returns (0, true).
+func optionalQueryID(r *http.Request, key string) (int64, bool) {
+	v := r.URL.Query().Get(key)
+	if v == "" {
+		return 0, true
+	}
+	id, err := strconv.ParseInt(v, 10, 64)
+	return id, err == nil && id > 0
 }
