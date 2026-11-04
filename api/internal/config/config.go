@@ -10,10 +10,12 @@ import (
 )
 
 type Config struct {
-	DatabaseURL string
-	SecretKey   []byte
-	TokenTTL    time.Duration
-	Addr        string
+	DatabaseURL    string
+	SecretKey      []byte
+	TokenTTL       time.Duration
+	Addr           string
+	FaceServiceURL string
+	FaceServiceKey string
 }
 
 func Load() (Config, error) {
@@ -22,9 +24,11 @@ func Load() (Config, error) {
 	_ = godotenv.Load("../.env")
 
 	cfg := Config{
-		DatabaseURL: os.Getenv("DATABASE_URL"),
-		SecretKey:   []byte(os.Getenv("SECRET_KEY")),
-		Addr:        getenv("ADDR", ":8000"),
+		DatabaseURL:    os.Getenv("DATABASE_URL"),
+		SecretKey:      []byte(os.Getenv("SECRET_KEY")),
+		Addr:           getenv("ADDR", ":8000"),
+		FaceServiceURL: getenv("FACE_SERVICE_URL", "http://127.0.0.1:8001"),
+		FaceServiceKey: os.Getenv("FACE_SERVICE_KEY"),
 	}
 
 	minutes, err := strconv.Atoi(getenv("ACCESS_TOKEN_MINUTES", "60"))
@@ -38,6 +42,9 @@ func Load() (Config, error) {
 	}
 	if len(cfg.SecretKey) < 32 {
 		return cfg, errors.New("SECRET_KEY must be at least 32 characters")
+	}
+	if cfg.FaceServiceKey == "" {
+		return cfg, errors.New("FACE_SERVICE_KEY is required")
 	}
 	return cfg, nil
 }

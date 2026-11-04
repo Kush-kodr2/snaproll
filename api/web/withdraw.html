@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delete my face data</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<main>
+  <h1>Delete my face data</h1>
+  <p class="lead">Enter your enrollment number and the withdraw code you received when you enrolled. Your face template will be deleted. Your past attendance records are kept.</p>
+  <form id="withdraw-form">
+    <label for="enrollment_no">Enrollment number</label>
+    <input type="text" id="enrollment_no" autocomplete="off" autocapitalize="characters">
+    <label for="withdraw_code">Withdraw code</label>
+    <input type="text" id="withdraw_code" autocomplete="off" autocapitalize="characters" maxlength="20">
+    <button type="submit" id="submit">Delete my data</button>
+    <p id="message" role="status"></p>
+  </form>
+  <p class="small">Lost your code? Contact [CONTACT].</p>
+</main>
+<script src="/static/withdraw.js"></script>
+</body>
+</html>

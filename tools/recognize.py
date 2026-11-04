@@ -10,7 +10,7 @@ KNOWN_DIR = ROOT / "data" / "known"
 DEFAULT_GROUP = ROOT / "data" / "group.jpg"
 OUT_PATH = ROOT / "data" / "out.jpg"
 IMG_EXT = {".jpg", ".jpeg", ".png"}
-THRESH = 0.40  # cosine similarity cutoff; tune later
+THRESH = 0.40  # cosine similarity cutoff; will tune later
 
 app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
 app.prepare(ctx_id=-1, det_size=(1280, 1280))  # large size helps small faces

@@ -13,6 +13,7 @@ import (
 	"attendance-api/internal/config"
 	"attendance-api/internal/db"
 	"attendance-api/internal/handlers"
+	"attendance-api/internal/faceclient"
 )
 
 func main() {
@@ -33,7 +34,12 @@ func main() {
 	}
 	defer pool.Close()
 
-	h := &handlers.Handler{DB: pool, Secret: cfg.SecretKey, TokenTTL: cfg.TokenTTL}
+		h := &handlers.Handler{
+		DB:       pool,
+		Secret:   cfg.SecretKey,
+		TokenTTL: cfg.TokenTTL,
+		Face:     faceclient.New(cfg.FaceServiceURL, cfg.FaceServiceKey),
+	}
 	srv := &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           handlers.Routes(h),

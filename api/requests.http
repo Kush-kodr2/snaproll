@@ -18,7 +18,7 @@ POST {{base}}/batches
 Authorization: Bearer {{login.response.body.access_token}}
 Content-Type: application/json
 
-{"name": "CSE 3rd Year 5th sem", "year": 3, "section": "A"}
+{"name": "CSE 3rd Year 6th sem", "year": 3, "section": "B"}
 
 ### 4. list batches
 GET {{base}}/batches
@@ -35,7 +35,7 @@ POST {{base}}/auth/teachers
 Authorization: Bearer {{login.response.body.access_token}}
 Content-Type: application/json
 
-{"name": "Test Teacher", "email": "teacher@example.com", "password": "teacher-pass-1"}
+{"name": "Test Professor", "email": "teacher123@example.com", "password": "abcd1234"}
 
 ### C. create a course
 # @name course
@@ -43,7 +43,7 @@ POST {{base}}/courses
 Authorization: Bearer {{login.response.body.access_token}}
 Content-Type: application/json
 
-{"code": "CS303", "name": "IWT"}
+{"code": "CS501", "name": "Thoery of Cmputation"}
 
 ### D. create an offering (teacher teaches course to batch)
 # @name offering
@@ -58,7 +58,7 @@ POST {{base}}/students
 Authorization: Bearer {{login.response.body.access_token}}
 Content-Type: application/json
 
-{"enrollment_no": "0101CS231062", "name": "Kushal", "batch_id": {{batches.response.body.$[0].id}}}
+{"enrollment_no": "0101CS231062", "name": "kushal", "batch_id": {{batches.response.body.$[0].id}}}
 
 ### F. list students
 GET {{base}}/students?batch_id={{batches.response.body.$[0].id}}
@@ -69,7 +69,7 @@ Authorization: Bearer {{login.response.body.access_token}}
 POST {{base}}/auth/login
 Content-Type: application/json
 
-{"email": "teacher@example.com", "password": "teacher-pass-1"}
+{"email": "teacher123@example.com", "password": "abcd1234"}
 
 ### H. teacher lists their offerings
 GET {{base}}/offerings
@@ -93,3 +93,33 @@ Authorization: Bearer {{tlogin.response.body.access_token}}
 Content-Type: application/json
 
 {"code": "CS999", "name": "Should Fail"}
+### admin: generate invite codes (use your batch id)
+POST {{base}}/batches/7/invite-codes
+Authorization: Bearer {{login.response.body.access_token}}
+
+### admin: check the Go to Python link
+POST {{base}}/tools/analyze
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="group_far.jpg"
+Content-Type: image/jpeg
+
+
+< ../data/known/group_far.jpg
+--WebAppBoundary--
+
+### withdraw
+POST {{base}}/enroll/withdraw
+Content-Type: application/json
+
+{"enrollment_no": "0101CS231062", "withdraw_code": "63AV44UJAB"}
+
+### admin deletes the student's face data
+DELETE {{base}}/students/16/face-data
+Authorization: Bearer {{login.response.body.access_token}}
+
+### fresh invite code for just this student
+POST {{base}}/students/16/invite-code
+Authorization: Bearer {{login.response.body.access_token}}

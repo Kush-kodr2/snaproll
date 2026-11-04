@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Attendance enrollment</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<main>
+  <h1>Face enrollment for attendance</h1>
+  <p class="lead">Add a few photos of yourself so the attendance system can recognize you in class photos.</p>
+
+  <details open>
+    <summary>What happens to my photos? Please read first</summary>
+    <ul>
+      <li><strong>Purpose:</strong> marking your attendance in SnapRoll. Nothing else.</li>
+      <li><strong>What is stored:</strong> a list of numbers (a "face template") computed from your photos. The photos themselves are not saved.</li>
+      <li><strong>Who can access it:</strong> only the project owner, Kush. Teachers see attendance results, not face templates.</li>
+      <li><strong>How long:</strong> until #date, or until you withdraw, whichever comes first.</li>
+      <li><strong>Withdrawing:</strong> you can delete your face data at any time with the withdraw code you receive after enrolling, at <a href="/withdraw">/withdraw</a>, or by contacting [CONTACT].</li>
+      <li>Enrolling is voluntary. If you don't enroll, your attendance is taken the usual way.</li>
+    </ul>
+    <p class="small">Consent text version 2026-10-v1</p>
+  </details>
+
+  <form id="enroll-form" novalidate>
+    <label for="enrollment_no">Enrollment number</label>
+    <input type="text" id="enrollment_no" autocomplete="off" autocapitalize="characters">
+
+    <label for="code">Invite code (given to you privately)</label>
+    <input type="text" id="code" autocomplete="off" autocapitalize="characters" maxlength="20">
+
+    <h2>Your photos</h2>
+    <p>Add at least 3 clear photos with only you in them, in good light. You can take them now or pick existing ones.</p>
+
+    <div class="slot">
+      <label for="photo1">Photo 1: look straight at the camera</label>
+      <input type="file" id="photo1" accept="image/*">
+      <img class="preview" alt="Preview of photo 1" hidden>
+    </div>
+    <div class="slot">
+      <label for="photo2">Photo 2: turn your head slightly left</label>
+      <input type="file" id="photo2" accept="image/*">
+      <img class="preview" alt="Preview of photo 2" hidden>
+    </div>
+    <div class="slot">
+      <label for="photo3">Photo 3: turn your head slightly right</label>
+      <input type="file" id="photo3" accept="image/*">
+      <img class="preview" alt="Preview of photo 3" hidden>
+    </div>
+    <div class="slot">
+      <label for="photo4">Photo 4 (optional): different lighting, or with/without glasses</label>
+      <input type="file" id="photo4" accept="image/*">
+      <img class="preview" alt="Preview of photo 4" hidden>
+    </div>
+    <div class="slot">
+      <label for="photo5">Photo 5 (optional): taken from your usual seat in class</label>
+      <input type="file" id="photo5" accept="image/*">
+      <img class="preview" alt="Preview of photo 5" hidden>
+    </div>
+
+    <label class="check">
+      <input type="checkbox" id="consent">
+      <span>I have read the notice above and I agree to my face data being stored for attendance as described.</span>
+    </label>
+
+    <button type="submit" id="submit">Enroll</button>
+    <p id="status" role="status" aria-live="polite"></p>
+    <p id="error" role="alert"></p>
+    <ul id="problems"></ul>
+  </form>
+
+  <section id="success" hidden>
+    <h2 id = "success-title">You're enrolled</h2>
+    <p>This is your withdraw code. It is shown only once, so write it down or take a screenshot.</p>
+    <p class="code" id="withdraw-code"></p>
+    <button type="button" id="copy">Copy code</button>
+    <p>Use it any time at <a href="/withdraw">/withdraw</a> to delete your face data.</p>
+  </section>
+</main>
+<script src="/static/enroll.js"></script>
+</body>
+</html>
