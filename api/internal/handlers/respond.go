@@ -59,3 +59,9 @@ func optionalQueryID(r *http.Request, key string) (int64, bool) {
 	id, err := strconv.ParseInt(v, 10, 64)
 	return id, err == nil && id > 0
 }
+
+// pathIDNamed reads a numeric path value such as {student_id}.
+func pathIDNamed(r *http.Request, name string) (int64, bool) {
+	id, err := strconv.ParseInt(r.PathValue(name), 10, 64)
+	return id, err == nil && id > 0
+}

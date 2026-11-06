@@ -22,6 +22,22 @@ type Client struct {
 	key     string
 	http    *http.Client
 }
+type Face struct {
+	BBox         []int   `json:"bbox"`
+	Width        int     `json:"width"`
+	DetScore     float64 `json:"det_score"`
+	Sharpness    float64 `json:"sharpness"`
+	EmbeddingB64 string  `json:"embedding_b64"`
+	CropB64      string  `json:"crop_b64"`
+}
+
+// CropBytes decodes the face thumbnail (empty if none was requested).
+func (f Face) CropBytes() ([]byte, error) {
+	if f.CropB64 == "" {
+		return nil, nil
+	}
+	return base64.StdEncoding.DecodeString(f.CropB64)
+}
 
 func New(baseURL, key string) *Client {
 	return &Client{
@@ -29,14 +45,6 @@ func New(baseURL, key string) *Client {
 		key:     key,
 		http:    &http.Client{Timeout: 60 * time.Second}, // big class photos take a while on CPU
 	}
-}
-
-type Face struct {
-	BBox         []int   `json:"bbox"`
-	Width        int     `json:"width"`
-	DetScore     float64 `json:"det_score"`
-	Sharpness    float64 `json:"sharpness"`
-	EmbeddingB64 string  `json:"embedding_b64"`
 }
 
 type Result struct {
@@ -78,6 +86,15 @@ func (e *StatusError) Error() string {
 }
 
 func (c *Client) Analyze(ctx context.Context, filename string, image io.Reader) (*Result, error) {
+	return c.analyze(ctx, filename, image, false)
+}
+
+// AnalyzeWithCrops also returns a small JPEG thumbnail of every face.
+func (c *Client) AnalyzeWithCrops(ctx context.Context, filename string, image io.Reader) (*Result, error) {
+	return c.analyze(ctx, filename, image, true)
+}
+
+func (c *Client) analyze(ctx context.Context, filename string, image io.Reader, crops bool) (*Result, error) {
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
 	part, err := mw.CreateFormFile("file", filename)
@@ -91,7 +108,11 @@ func (c *Client) Analyze(ctx context.Context, filename string, image io.Reader) 
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/analyze", &body)
+	url := c.baseURL + "/analyze"
+	if crops {
+		url += "?crops=true"
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, &body)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +129,6 @@ func (c *Client) Analyze(ctx context.Context, filename string, image io.Reader) 
 		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
 		return nil, &StatusError{Code: resp.StatusCode, Body: string(msg)}
 	}
-
 	var res Result
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		return nil, err

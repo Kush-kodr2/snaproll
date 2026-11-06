@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Attendance</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+
+<body>
+  <main>
+    <header class="topbar" id="topbar" hidden>
+      <strong id="who"></strong>
+      <button type="button" id="logout" class="secondary">Log out</button>
+    </header>
+    <p id="banner" role="alert" class="error"></p>
+
+    <section id="view-login" hidden>
+      <h1>Teacher login</h1>
+      <form id="login-form">
+        <label for="email">Email</label>
+        <input type="text" id="email" autocomplete="username" autocapitalize="none">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password">
+        <button type="submit" id="login-submit">Log in</button>
+      </form>
+    </section>
+
+    <section id="view-home" hidden>
+      <h1>Your courses</h1>
+      <div id="offerings"></div>
+      <div id="past-panel" hidden>
+        <h2 id="past-title">Past sessions</h2>
+        <ul id="past-list" class="class-list"></ul>
+      </div>
+    </section>
+
+    <section id="view-session" hidden>
+      <p><a href="#/">&larr; All courses</a></p>
+      <h1 id="session-title"></h1>
+      <p id="session-meta" class="muted"></p>
+      <div id="counts" class="counts"></div>
+
+      <div id="upload-panel">
+        <h2>1. Add class photos</h2>
+        <p class="muted">Take one photo per section of the class: landscape, full size, nobody right at the corners. Add
+          them one after another. You can add more at any time. If your phone asks for a photo size, choose the largest.
+        </p>
+        <div class="upload-buttons">
+          <button type="button" id="camera-btn">Take a photo</button>
+          <button type="button" id="gallery-btn" class="secondary">Choose from gallery</button>
+        </div>
+        <input type="file" id="photo-camera" accept="image/*" capture="environment" hidden>
+        <input type="file" id="photo-gallery" accept="image/*" multiple hidden>
+        <ul id="upload-log"></ul>
+      </div>
+
+      <div id="review-panel" hidden>
+        <h2>2. Please check these faces</h2>
+        <p class="muted">The system is not sure about these. Does the face match the name?</p>
+        <div id="review-list" class="review-grid"></div>
+      </div>
+
+      <h2>Class list</h2>
+      <input type="text" id="search" placeholder="Search by name or enrollment number" autocomplete="off">
+      <ul id="class-list" class="class-list"></ul>
+
+      <div id="close-bar" class="close-bar">
+        <button type="button" id="close-btn">Close session</button>
+        <span id="close-note" class="muted"></span>
+      </div>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+
+</html>

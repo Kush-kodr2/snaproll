@@ -16,6 +16,49 @@ var (
 	errForbidden = errors.New("forbidden")
 )
 
+type sessionDetail struct {
+	ID           int64  `json:"id"`
+	OfferingID   int64  `json:"offering_id"`
+	SessionDate  string `json:"session_date"`
+	Status       string `json:"status"`
+	StudentCount int64  `json:"student_count"`
+	CourseCode   string `json:"course_code"`
+	CourseName   string `json:"course_name"`
+	BatchName    string `json:"batch_name"`
+}
+
+// GET /sessions/{id}
+func (h *Handler) GetSession(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	p, _ := auth.FromContext(ctx)
+	id, ok := pathID(r)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid session id")
+		return
+	}
+	if err := h.authorizeSession(ctx, p, id); err != nil {
+		accessError(w, err)
+		return
+	}
+	var s sessionDetail
+	err := h.DB.QueryRow(ctx,
+		`SELECT s.id, s.offering_id, s.session_date::text, s.status,
+		        (SELECT count(*) FROM attendance a WHERE a.session_id = s.id),
+		        c.code, c.name, b.name
+		 FROM sessions s
+		 JOIN offerings o ON o.id = s.offering_id
+		 JOIN courses   c ON c.id = o.course_id
+		 JOIN batches   b ON b.id = o.batch_id
+		 WHERE s.id = $1`, id,
+	).Scan(&s.ID, &s.OfferingID, &s.SessionDate, &s.Status, &s.StudentCount,
+		&s.CourseCode, &s.CourseName, &s.BatchName)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, s)
+}
+
 // offeringBatch returns the offering's batch id if the user may use it:
 // admins can use any offering, teachers only their own.
 func (h *Handler) offeringBatch(ctx context.Context, p auth.Principal, offeringID int64) (int64, error) {
@@ -177,6 +220,7 @@ type attendanceOut struct {
 	Status       string   `json:"status"`
 	Method       string   `json:"method"`
 	Confidence   *float32 `json:"confidence"`
+	Enrolled     bool     `json:"enrolled"`
 }
 
 // GET /sessions/{id}/attendance
@@ -193,7 +237,8 @@ func (h *Handler) SessionAttendance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := h.DB.Query(r.Context(),
-		`SELECT a.student_id, st.enrollment_no, st.name, a.status, a.method, a.confidence
+		`SELECT a.student_id, st.enrollment_no, st.name, a.status, a.method, a.confidence,
+		        EXISTS (SELECT 1 FROM face_embeddings fe WHERE fe.student_id = a.student_id)
 		 FROM attendance a
 		 JOIN students st ON st.id = a.student_id
 		 WHERE a.session_id = $1
@@ -208,7 +253,7 @@ func (h *Handler) SessionAttendance(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var a attendanceOut
 		if err := rows.Scan(&a.StudentID, &a.EnrollmentNo, &a.Name,
-			&a.Status, &a.Method, &a.Confidence); err != nil {
+			&a.Status, &a.Method, &a.Confidence, &a.Enrolled); err != nil {
 			serverError(w, err)
 			return
 		}

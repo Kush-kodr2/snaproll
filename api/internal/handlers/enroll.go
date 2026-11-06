@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	consentVersion = "2026-10-v1"
+	consentVersion = "2026-11-v2"
 	minPhotos      = 3
 	maxPhotos      = 5
 	maxUploadBytes = 40 << 20

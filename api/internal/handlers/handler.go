@@ -15,7 +15,7 @@ type Handler struct {
 	DB       *pgxpool.Pool
 	Secret   []byte
 	TokenTTL time.Duration
-	Face *faceclient.Client
+	Face     *faceclient.Client
 }
 
 func Routes(h *Handler) http.Handler {
@@ -32,7 +32,7 @@ func Routes(h *Handler) http.Handler {
 
 	mux.HandleFunc("POST /auth/bootstrap", h.Bootstrap)
 	mux.HandleFunc("POST /auth/login", h.Login)
-	
+
 	mux.HandleFunc("POST /enroll", h.Enroll)
 	mux.HandleFunc("POST /enroll/withdraw", h.Withdraw)
 
@@ -54,7 +54,7 @@ func Routes(h *Handler) http.Handler {
 	mux.Handle("GET /students", protected(h.ListStudents))
 	mux.Handle("POST /students", adminOnly(h.CreateStudent))
 	mux.Handle("POST /students/{id}/invite-code", adminOnly(h.CreateStudentInvite))
-	
+
 	mux.Handle("POST /batches/{id}/students/import", adminOnly(h.ImportStudents))
 	mux.Handle("GET /sessions", protected(h.ListSessions))
 	mux.Handle("POST /sessions", protected(h.CreateSession))
@@ -63,8 +63,19 @@ func Routes(h *Handler) http.Handler {
 	mux.HandleFunc("GET /enroll", servePage("web/enroll.html"))
 	mux.HandleFunc("GET /withdraw", servePage("web/withdraw.html"))
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
-	
+
 	mux.Handle("POST /sessions/{id}/photos", protected(h.SessionPhotos))
 	mux.Handle("DELETE /students/{id}/face-data", adminOnly(h.DeleteFaceData))
+
+	mux.Handle("GET /sessions/{id}/review", protected(h.SessionReview))
+	mux.Handle("GET /sessions/{id}/review/{student_id}/crop", protected(h.ReviewCrop))
+	mux.Handle("PUT /sessions/{id}/attendance/{student_id}", protected(h.SetAttendance))
+	mux.Handle("POST /sessions/{id}/close", protected(h.CloseSession))
+
+	mux.HandleFunc("GET /app", servePage("web/app.html"))
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/app", http.StatusFound)
+	})
+	mux.Handle("GET /sessions/{id}", protected(h.GetSession))
 	return mux
 }

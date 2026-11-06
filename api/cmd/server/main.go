@@ -40,6 +40,7 @@ func main() {
 		TokenTTL: cfg.TokenTTL,
 		Face:     faceclient.New(cfg.FaceServiceURL, cfg.FaceServiceKey),
 	}
+	go h.StartCleanup(ctx)
 	srv := &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           handlers.Routes(h),

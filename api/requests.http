@@ -35,7 +35,7 @@ POST {{base}}/auth/teachers
 Authorization: Bearer {{login.response.body.access_token}}
 Content-Type: application/json
 
-{"name": "Test Professor", "email": "teacher123@example.com", "password": "abcd1234"}
+{"name": "Test Professor 1", "email": "teacher1233@example.com", "password": "abcd1234"}
 
 ### C. create a course
 # @name course
@@ -43,7 +43,7 @@ POST {{base}}/courses
 Authorization: Bearer {{login.response.body.access_token}}
 Content-Type: application/json
 
-{"code": "CS501", "name": "Thoery of Cmputation"}
+{"code": "CS502", "name": "Database management system"}
 
 ### D. create an offering (teacher teaches course to batch)
 # @name offering
@@ -69,7 +69,7 @@ Authorization: Bearer {{login.response.body.access_token}}
 POST {{base}}/auth/login
 Content-Type: application/json
 
-{"email": "teacher123@example.com", "password": "abcd1234"}
+{"email": "teacher1233@example.com", "password": "abcd1234"}
 
 ### H. teacher lists their offerings
 GET {{base}}/offerings
@@ -115,6 +115,21 @@ POST {{base}}/enroll/withdraw
 Content-Type: application/json
 
 {"enrollment_no": "0101CS231062", "withdraw_code": "63AV44UJAB"}
+
+### teacher gets the to be review faces (cropped)
+GET {{base}}/sessions/4/review
+Authorization: Bearer {{tlogin.response.body.access_token}}
+
+### teacher decides on one student
+PUT {{base}}/sessions/4/attendance/11
+Authorization: Bearer {{tlogin.response.body.access_token}}
+Content-Type: application/json
+
+{"status": "absent"}
+
+### close the session
+POST {{base}}/sessions/4/close
+Authorization: Bearer {{tlogin.response.body.access_token}}
 
 ### admin deletes the student's face data
 DELETE {{base}}/students/16/face-data

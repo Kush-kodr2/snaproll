@@ -85,13 +85,27 @@ def sharpness(img: np.ndarray, bbox) -> float:
     gray = cv2.cvtColor(cv2.resize(crop, (112, 112)), cv2.COLOR_BGR2GRAY)
     return float(cv2.Laplacian(gray, cv2.CV_64F).var())
 
+def make_crop(img: np.ndarray, bbox, size: int = 160) -> str:
+    """Small JPEG thumbnail of a face, with some margin, as base64."""
+    h, w = img.shape[:2]
+    x1, y1, x2, y2 = [int(v) for v in bbox]
+    pad = int(0.25 * max(x2 - x1, y2 - y1))
+    crop = img[max(y1 - pad, 0):min(y2 + pad, h), max(x1 - pad, 0):min(x2 + pad, w)]
+    if crop.size == 0:
+        return ""
+    ch, cw = crop.shape[:2]
+    scale = size / max(ch, cw)
+    crop = cv2.resize(crop, (max(int(cw * scale), 1), max(int(ch * scale), 1)),
+                      interpolation=cv2.INTER_AREA if scale < 1 else cv2.INTER_CUBIC)
+    ok, buf = cv2.imencode(".jpg", crop, [cv2.IMWRITE_JPEG_QUALITY, 85])
+    return base64.b64encode(buf.tobytes()).decode() if ok else ""
 
 # @app.get("/health")
 # def health():
 #     return {"status": "ok", "det_size": DET_SIZE}
 
 @app.post("/analyze", dependencies=[Depends(check_key)])
-def analyze(file: UploadFile = File(...)):
+def analyze(file: UploadFile = File(...), crops: bool = False):
     data = file.file.read(MAX_BYTES + 1)
     if len(data) > MAX_BYTES:
         raise HTTPException(status_code=413, detail="image too large (max 15 MB)")
@@ -103,19 +117,21 @@ def analyze(file: UploadFile = File(...)):
     out = []
     for f in faces:
         x1, y1, x2, y2 = [int(v) for v in f.bbox]
-        out.append({
-            "bbox": [x1, y1, x2, y2],  # coordinates in the image that was analyzed
+        entry = {
+            "bbox": [x1, y1, x2, y2],
             "width": x2 - x1,
             "det_score": round(float(f.det_score), 4),
             "sharpness": round(sharpness(used, f.bbox), 1),
-            # 512 float32 values, little-endian, base64: 2048 bytes, ready for the BYTEA column
             "embedding_b64": base64.b64encode(
                 f.normed_embedding.astype("<f4").tobytes()).decode(),
-        })
+        }
+        if crops:
+            entry["crop_b64"] = make_crop(used, f.bbox)
+        out.append(entry)
 
     return {
         "image_width": width,
         "image_height": height,
-        "rotated_by": angle,  # 0 unless the photo was sideways and had to be turned
+        "rotated_by": angle,
         "faces": out,
     }

@@ -34,6 +34,18 @@ WHERE session_id = $1 AND student_id = $2 AND method = 'auto'
       OR (status = $3::text AND COALESCE(confidence, -1) < $4::real)
   )`
 
+// Keeps the best-scoring thumbnail per student, and only while that student is still
+// waiting for review (not already present, and not decided by hand).
+const saveReviewFaceSQL = `
+INSERT INTO review_faces (session_id, student_id, photo_no, score, margin, face_width, crop)
+SELECT $1::bigint, $2::bigint, $3::int, $4::real, $5::real, $6::int, $7::bytea
+WHERE EXISTS (SELECT 1 FROM attendance
+              WHERE session_id = $1 AND student_id = $2 AND status = 'needs_review' AND method = 'auto')
+ON CONFLICT (session_id, student_id) DO UPDATE
+SET photo_no = EXCLUDED.photo_no, score = EXCLUDED.score, margin = EXCLUDED.margin,
+    face_width = EXCLUDED.face_width, crop = EXCLUDED.crop, created_at = now()
+WHERE review_faces.score < EXCLUDED.score`
+
 type studentInfo struct {
 	EnrollmentNo string
 	Name         string
@@ -48,6 +60,7 @@ type matchOut struct {
 	Margin       float32 `json:"margin"`
 	Photo        int     `json:"photo"`
 	FaceWidth    int     `json:"face_width"`
+	Crop         []byte  `json:"-"` // never sent to the client in this response
 }
 
 type photoOut struct {
@@ -194,11 +207,15 @@ func (h *Handler) SessionPhotos(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusUnprocessableEntity, fmt.Sprintf("photo %d: could not read the file", i+1))
 			return
 		}
-		res, err := h.Face.Analyze(ctx, fh.Filename, f)
+		res, err := h.Face.AnalyzeWithCrops(ctx, fh.Filename, f)
 		f.Close()
 		var se *faceclient.StatusError
 		if errors.As(err, &se) && se.Code == http.StatusBadRequest {
 			writeError(w, http.StatusUnprocessableEntity, fmt.Sprintf("photo %d is not a readable image", i+1))
+			return
+		}
+		if errors.As(err, &se) && se.Code == http.StatusRequestEntityTooLarge {
+			writeError(w, http.StatusUnprocessableEntity, fmt.Sprintf("photo %d is too large (max 15 MB)", i+1))
 			return
 		}
 		if err != nil {
@@ -227,9 +244,14 @@ func (h *Handler) SessionPhotos(w http.ResponseWriter, r *http.Request) {
 			if !seen || rank(st) > rank(cur.Status) ||
 				(rank(st) == rank(cur.Status) && m.Score > cur.Score) {
 				si := info[m.StudentID]
+				var crop []byte
+				if st == "needs_review" {
+					crop, _ = face.CropBytes() // thumbnails are kept only for faces the teacher must check
+				}
 				best[m.StudentID] = matchOut{
 					StudentID: m.StudentID, EnrollmentNo: si.EnrollmentNo, Name: si.Name,
 					Status: st, Score: m.Score, Margin: m.Margin, Photo: i + 1, FaceWidth: face.Width,
+					Crop: crop,
 				}
 			}
 		}
@@ -265,7 +287,22 @@ func (h *Handler) SessionPhotos(w http.ResponseWriter, r *http.Request) {
 		if _, err := tx.Exec(ctx, upgradeAttendanceSQL, sessionID, studentID, m.Status, m.Score); err != nil {
 			serverError(w, err)
 			return
+		    }
+		if m.Status == "needs_review" && len(m.Crop) > 0 {
+			if _, err := tx.Exec(ctx, saveReviewFaceSQL, sessionID, studentID,
+				m.Photo, m.Score, m.Margin, m.FaceWidth, m.Crop); err != nil {
+				serverError(w, err)
+				return
+			}
 		}
+	}
+	// Drop thumbnails of students who are no longer waiting for review.
+	if _, err := tx.Exec(ctx,
+		`DELETE FROM review_faces rf USING attendance a
+		 WHERE rf.session_id = $1 AND a.session_id = rf.session_id
+		   AND a.student_id = rf.student_id AND a.status <> 'needs_review'`, sessionID); err != nil {
+		serverError(w, err)
+		return
 	}
 	if _, err := tx.Exec(ctx,
 		`UPDATE sessions SET status = 'reviewing' WHERE id = $1 AND status = 'open'`, sessionID); err != nil {
